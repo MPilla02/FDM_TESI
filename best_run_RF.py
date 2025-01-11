@@ -71,7 +71,7 @@ def _get_run_query(config_sweep):
     return data_flat_tot
 
 api = wandb.Api()
-sweep_id ='sznu5qxb'  
+sweep_id ='uisremj3'  
 entity = 'pilla-sapienza-universit-di-roma'
 project_name = 'random-forest-hyperparam-sweep-new'
 
@@ -147,8 +147,21 @@ y_val_pred = model_rf.predict(x_val)
 rmse_val = np.sqrt(mean_squared_error(y_val, y_val_pred))
 print(f"RMSE sul dataset di validazione (Random Forest): {rmse_val}")
 
-# GRAFICI
-# Riscala dati normalizzati nel dominio reale
+# Dizionario delle unità di misura per ogni variabile target
+units = {
+    "Young (N/%)": "N/%",
+    "Force UTS (N)": "N",
+    "Strain UTS (%)": "%",
+    "Force Yield (N)": "N",
+    "Strain Yield (%)": "%",
+    "Strain Break (%)": "%",
+    "Work (J)": "J",
+    "b (mm)": "mm",
+    "h (mm)": "mm",
+    "Beauty": ""  
+    }
+
+# Rescaling
 with open('C:/Users/maria/OneDrive/Desktop/Python/FDM_TESI/scaler_properties.pkl', 'rb') as f:
     scaler = pickle.load(f)
 y_train_test_rescaled = scaler.inverse_transform(y_train_test)
@@ -156,61 +169,88 @@ y_train_test_pred_rescaled =  scaler.inverse_transform(y_train_test_pred)
 y_val_rescaled =  scaler.inverse_transform(y_val)
 y_val_pred_rescaled =  scaler.inverse_transform(y_val_pred)
 
-# Genera grafici per ogni variabile target
+# Errore assoluto medio
+absolute_errors_train_test = np.abs(y_train_test_rescaled - y_train_test_pred_rescaled)
+absolute_errors_val = np.abs(y_val_rescaled - y_val_pred_rescaled)
+
+mean_absolute_errors_train_test = np.mean(absolute_errors_train_test, axis=0)
+mean_absolute_errors_val = np.mean(absolute_errors_val, axis=0)
+
+print("Errore assoluto medio per variabile (Train+Test):")
+for column, error in zip(target_column, mean_absolute_errors_train_test):
+    print(f"{column}: {error:.2f}")
+
+print("\nErrore assoluto medio per variabile (Validation):")
+for column, error in zip(target_column, mean_absolute_errors_val):
+    print(f"{column}: {error:.2f}")
+
+# Salvataggio errori assoluti
+error_output_path = 'C:/Users/maria/OneDrive/Desktop/Python/FDM_TESI/Errori_Assoluti_RANDOMFOREST.txt'
+with open(error_output_path, 'w') as f:
+    f.write("Errore assoluto medio per variabile (Train+Test):\n")
+    for column, error in zip(target_column, mean_absolute_errors_train_test):
+        f.write(f"{column}: {error:.2f}\n")
+    f.write("\nErrore assoluto medio per variabile (Validation):\n")
+    for column, error in zip(target_column, mean_absolute_errors_val):
+        f.write(f"{column}: {error:.2f}\n")
+
+# GRAFICI
+
 def sanitize_filename(filename):
     return re.sub(r'[<>:"/\\|?*]', '_', filename)
 
 for i, column in enumerate(target_column):
+    unit = units.get(column, "")  
+    error_train_test = mean_absolute_errors_train_test[i]
+    error_val = mean_absolute_errors_val[i]
+
     title_train_test = f"{column}: Predetto vs Reale (Train+Test) con RF"
     title_validation = f"{column}: Predetto vs Reale (Validation) con RF"
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))  
-
     for ax in axes:
         ax.set_aspect('equal')  
     
-    # Calcola i limiti minimi e massimi per la variabile specifica
     x_min = min(y_train_test_rescaled[:, i].min(), y_val_rescaled[:, i].min())
     x_max = max(y_train_test_rescaled[:, i].max(), y_val_rescaled[:, i].max())
     y_min = min(y_train_test_pred_rescaled[:, i].min(), y_val_pred_rescaled[:, i].min())
     y_max = max(y_train_test_pred_rescaled[:, i].max(), y_val_pred_rescaled[:, i].max())
     
-    # Calcola il minimo e massimo globale con un margine aggiuntivo
-    margin = 0.05 * (max(x_max, y_max) - min(x_min, y_min))  # 5% del range come margine
+    margin = 0.05 * (max(x_max, y_max) - min(x_min, y_min)) 
     local_min = min(x_min, y_min) - margin
     local_max = max(x_max, y_max) + margin
 
-    # Subplot per Train+Test
+    # Train+Test Plot
     axes[0].scatter(y_train_test_rescaled[:, i], y_train_test_pred_rescaled[:, i], color='blue', alpha=0.5, label="Predizioni")
-    axes[0].plot([local_min, local_max], [local_min, local_max],
-                 color='red', linestyle='--', label="Bisettrice (y=x)")
-    axes[0].set_title(title_train_test)  
+    axes[0].plot([local_min, local_max], [local_min, local_max], color='red', linestyle='--', label="Bisettrice (y=x)")
+    axes[0].set_title(title_train_test)
     axes[0].set_xlabel("Reale")
     axes[0].set_ylabel("Predetto")
     axes[0].legend()
     axes[0].grid(True)
     axes[0].set_xlim(local_min, local_max)
     axes[0].set_ylim(local_min, local_max)
+    axes[0].text(0.05, 0.95, f"Errore Assoluto Medio:\n{error_train_test:.2f} {unit}", transform=axes[0].transAxes,
+                 fontsize=10, verticalalignment='top', bbox=dict(boxstyle="round", facecolor="white", alpha=0.5))
 
-    # Subplot per Validation
+    # Validation Plot
     axes[1].scatter(y_val_rescaled[:, i], y_val_pred_rescaled[:, i], color='green', alpha=0.5, label="Predizioni")
-    axes[1].plot([local_min, local_max], [local_min, local_max],
-                 color='red', linestyle='--', label="Bisettrice (y=x)")
-    axes[1].set_title(title_validation)  
+    axes[1].plot([local_min, local_max], [local_min, local_max], color='red', linestyle='--', label="Bisettrice (y=x)")
+    axes[1].set_title(title_validation)
     axes[1].set_xlabel("Reale")
     axes[1].set_ylabel("Predetto")
     axes[1].legend()
     axes[1].grid(True)
     axes[1].set_xlim(local_min, local_max)
     axes[1].set_ylim(local_min, local_max)
+    axes[1].text(0.05, 0.95, f"Errore Assoluto Medio:\n{error_val:.2f} {unit}", transform=axes[1].transAxes,
+                 fontsize=10, verticalalignment='top', bbox=dict(boxstyle="round", facecolor="white", alpha=0.5))
 
     plt.tight_layout()
 
     sanitized_column = sanitize_filename(column)
-    
-    # Salvataggio immagini 
     folder_path = 'C:/Users/maria/OneDrive/Desktop/Python/FDM_TESI/Grafici_Predizioni_RANDOMFOREST'
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     plt.savefig(f"{folder_path}/{sanitized_column}.png", dpi=300)  
-    plt.close
+    plt.close()
