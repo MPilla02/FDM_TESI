@@ -12,6 +12,7 @@ utilizzato come termine di confronto. La repositary contiene i codici necessari 
 - [Inizializzazione sweep XGB](./init_sweep_xgboost)- inizializzazione sweep su wandb per ottimizzazione parametri
 - [Modello XGB](./model_xgbost)
 - [Parallelizzazione XGB](./parallelW_XGB) - parallelizzazione di più processi paralleli
+- [Suddivisione dati per allenamento finale](./dataset_split)
 - [Allenamento finale XGB](./best_run_XGB) - è stata trovata la configurazione di parametri ottimale e si è allenato su questa il modello
 
 - [Inizializzazione sweep RF](./init_sweep_randomforest)- inizializzazione sweep su wandb per ottimizzazione parametri
