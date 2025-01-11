@@ -8,11 +8,11 @@ utilizzato come termine di confronto. La repositary contiene i codici necessari 
 - [PCA](./variance) - calcolo varianza e matrice di correlazione dei dati in entrata
 - [Pre-processing](./preprocess_parameters) - normalizzazione del dataset
 - [Pre-processing](./kfold) - suddivisione dataset in validation e train+test e suddivisione tramite KFold-Cross Validation dei dati di training da quelli di testing
+- [Suddivisione dati per allenamento finale](./dataset_split)
   
 - [Inizializzazione sweep XGB](./init_sweep_xgboost)- inizializzazione sweep su wandb per ottimizzazione parametri
 - [Modello XGB](./model_xgbost)
 - [Parallelizzazione XGB](./parallelW_XGB) - parallelizzazione di più processi paralleli
-- [Suddivisione dati per allenamento finale](./dataset_split)
 - [Allenamento finale XGB](./best_run_XGB) - è stata trovata la configurazione di parametri ottimale e si è allenato su questa il modello
 
 - [Inizializzazione sweep RF](./init_sweep_randomforest)- inizializzazione sweep su wandb per ottimizzazione parametri
